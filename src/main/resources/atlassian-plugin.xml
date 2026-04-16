@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <atlassian-plugin key="${atlassian.plugin.key}" name="${project.name}" plugins-version="2">
     <plugin-info>
         <description>${project.description}</description>
@@ -7,21 +8,56 @@
         <param name="plugin-logo">images/pluginLogo.png</param>
     </plugin-info>
 
-    <!-- add our i18n resource -->
-    <resource type="i18n" name="i18n" location="settings"/>
-    
-    <!-- add our web resources -->
-    <web-resource key="settings-resources" name="settings Web Resources">
+    <!-- 1. Общие зависимости (AUI) -->
+    <web-resource key="settings-common-resources" name="Settings Common Resources">
         <dependency>com.atlassian.auiplugin:ajs</dependency>
-        
+        <dependency>com.atlassian.auiplugin:aui-experimental-restfultable</dependency>
+        <dependency>com.atlassian.auiplugin:aui-flags</dependency>
+        <dependency>com.atlassian.auiplugin:aui-button</dependency>
+    </web-resource>
+
+    <web-resource key="js-resources" name="JS Resources">
+        <!-- Обязательная зависимость от AUI -->
+        <dependency>com.atlassian.auiplugin:ajs</dependency>
+        <!-- Ссылка на файл JS -->
+        <resource type="download" name="test.js" location="/js/test.js"/>
+    </web-resource>
+    <!-- 2. Основные ресурсы (CSS, JS) -->
+    <web-resource key="settings-resources" name="Settings Web Resources">
+        <dependency>${atlassian.plugin.key}:settings-common-resources</dependency>
         <resource type="download" name="settings.css" location="/css/settings.css"/>
         <resource type="download" name="settings.js" location="/js/settings.js"/>
-        <resource type="download" name="images/" location="/images"/>
-
-        <context>settings</context>
+        <contex></contex>
     </web-resource>
-    <ao key="ao-module">
-        <description>The AO module for this plugin.</description>
-        <entity>ru.bureau.entity.Setting</entity>
+
+    <web-resource key="test-setting" name="Test Setting">
+        <resource type="download" name="test.js" location="/js/test.js"/>
+        <dependency>com.atlassian.auiplugin:aui-restfultable</dependency>
+
+        <!-- Кнопки и флаг для ошибок (опционально, но желательно) -->
+        <dependency>com.atlassian.auiplugin:aui-button</dependency>
+        <dependency>com.atlassian.auiplugin:aui-flag</dependency>
+    </web-resource>
+
+    <!-- 3. REST API -->
+    <rest key="bureau-rest-api" path="bureau" version="1">
+        <description>REST API for Bureau plugin</description>
+    </rest>
+
+
+    <!-- 5. Сервлет (отвечает за .vm файл) -->
+    <servlet key="bureau-settings-page" name="Settings Page" class="ru.bureau.settings.servlet.SettingsServletMainPage">
+        <description>Serves settings.vm template</description>
+        <url-pattern>/bureau/settings</url-pattern>
+
+        <init-param>
+            <param-name>template</param-name>
+            <param-value>/templates/bureu-settings.vm</param-value>
+        </init-param>
+    </servlet>
+
+    <ao key="${atlassian.plugin.key}-ao-module">
+        <description>The AO module for storing issue log messages at db.</description>
+        <entity>ru.bureau.settings.entity.Setting</entity>
     </ao>
 </atlassian-plugin>

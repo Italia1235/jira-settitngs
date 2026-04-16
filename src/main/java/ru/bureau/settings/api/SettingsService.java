@@ -1,7 +1,11 @@
-package ru.bureau.api;
+package ru.bureau.settings.api;
 
 
-import ru.bureau.entity.Setting;
+
+
+import ru.bureau.settings.entity.Setting;
+
+import java.util.List;
 
 public interface SettingsService {
 
@@ -27,4 +31,6 @@ public interface SettingsService {
     void updateSettings(String name, String newValue);
 
     boolean deleteSettingByName(String name);
+
+    List<Setting> getAllSettings();
 }

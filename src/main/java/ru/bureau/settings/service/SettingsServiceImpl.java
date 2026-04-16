@@ -1,4 +1,4 @@
-package ru.bureau.service;
+package ru.bureau.settings.service;
 
 import com.atlassian.activeobjects.external.ActiveObjects;
 import com.atlassian.cache.Cache;
@@ -8,22 +8,27 @@ import com.atlassian.cache.CacheSettingsBuilder;
 import com.atlassian.plugin.spring.scanner.annotation.export.ExportAsService;
 import com.atlassian.plugin.spring.scanner.annotation.imports.ComponentImport;
 import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
+
 import net.java.ao.DBParam;
 import org.apache.commons.lang3.StringUtils;
-import ru.bureau.api.SettingsService;
-import ru.bureau.entity.Setting;
+import ru.bureau.settings.api.SettingsService;
+import ru.bureau.settings.entity.Setting;
+
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import javax.inject.Named;
+import java.util.Arrays;
+import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
-@Slf4j
 @ExportAsService({SettingsService.class})
 @Named
 
 public class SettingsServiceImpl implements SettingsService {
+    private static final Logger log = LoggerFactory.getLogger(SettingsServiceImpl.class);
     @ComponentImport
     private final ActiveObjects activeObjects;
     private final CacheSettings cacheSettings;
@@ -123,6 +128,18 @@ public class SettingsServiceImpl implements SettingsService {
         } catch (Exception e) {
             log.error("Error deleting setting '{}'", name, e);
             throw new RuntimeException("Failed to delete setting: " + name, e);
+        }
+    }
+
+    @Override
+    public List<Setting> getAllSettings() {
+        try {
+            Setting[] all = activeObjects.find(Setting.class);
+            // Конвертируем массив в список
+            return Arrays.asList(all);
+        } catch (Exception e) {
+            log.error("Ошибка получения всех настроек", e);
+            return java.util.Collections.emptyList();
         }
     }
 

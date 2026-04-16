@@ -42,10 +42,22 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+            <version>4.0.1</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
             <groupId>com.atlassian.activeobjects</groupId>
             <artifactId>activeobjects-test</artifactId>
             <version>1.0.0</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.atlassian.templaterenderer</groupId>
+            <artifactId>atlassian-template-renderer-api</artifactId>
+            <version>2.0.3</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.atlassian.activeobjects</groupId>
@@ -84,7 +96,12 @@
             <version>1</version>
             <scope>provided</scope>
         </dependency>
-
+        <dependency>
+            <groupId>com.sun.istack</groupId>
+            <artifactId>istack-commons-runtime</artifactId>
+            <version>3.0.10</version>
+            <scope>provided</scope>
+        </dependency>
         <!-- WIRED TEST RUNNER DEPENDENCIES -->
         <dependency>
             <groupId>com.atlassian.plugins</groupId>
@@ -112,6 +129,7 @@
             <version>1.7.30</version>
             <scope>provided</scope>
         </dependency>
+
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
@@ -171,7 +189,7 @@
 
                         <!-- Add package to export here -->
                         <Export-Package>
-                            ru.bureau.api,
+                            ru.bureau.settings.api,
                         </Export-Package>
 
                         <!-- Add package import here -->
@@ -206,7 +224,7 @@
     </build>
 
     <properties>
-        <jira.version>7.13.0</jira.version>
+        <jira.version>8.22.0</jira.version>
         <amps.version>8.1.2</amps.version>
         <plugin.testrunner.version>2.0.2</plugin.testrunner.version>
         <atlassian.spring.scanner.version>2.1.7</atlassian.spring.scanner.version>

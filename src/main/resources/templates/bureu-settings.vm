@@ -1,0 +1,16 @@
+<html lang="en">
+<head>
+    <title>Bureau Settings</title>
+    <meta name="decorator" content="admin"/>
+    <meta name="admin.active.section" content="admin_plugins_menu"/>
+    <meta name="aui-page-panel" content="true"/>
+    $webResourceManager.requireResource("ru.bureau.settings:test-setting")
+
+</head>
+<body>
+<div class="content-body">
+    <h2>Settings Entity</h2>
+    <table id="settings-table"></table>
+</div>
+</body>
+</html>
