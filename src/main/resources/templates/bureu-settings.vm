@@ -10,6 +10,10 @@
 <body>
 <div class="content-body">
     <h2>Settings Entity</h2>
+    <div id="bureau-settings-error-msg" style="display: none; margin-top: 10px; background: #ffecec; border: 1px solid #d00; padding: 10px; color: #b00; border-radius: 4px;">
+        <span class="error-text"></span>
+        <a href="#" class="error-close">✕</a>
+    </div>
     <table id="settings-table"></table>
 </div>
 </body>

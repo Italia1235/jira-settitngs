@@ -8,20 +8,21 @@ import com.atlassian.cache.CacheSettingsBuilder;
 import com.atlassian.plugin.spring.scanner.annotation.export.ExportAsService;
 import com.atlassian.plugin.spring.scanner.annotation.imports.ComponentImport;
 import lombok.SneakyThrows;
-
 import net.java.ao.DBParam;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ru.bureau.settings.api.SettingsService;
+import ru.bureau.settings.dto.SettingDto;
 import ru.bureau.settings.entity.Setting;
-
+import ru.bureau.settings.error.DuplicateKeyException;
+import ru.bureau.settings.mapper.SettingMapper;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import javax.inject.Named;
 import java.util.Arrays;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 @ExportAsService({SettingsService.class})
@@ -32,13 +33,15 @@ public class SettingsServiceImpl implements SettingsService {
     @ComponentImport
     private final ActiveObjects activeObjects;
     private final CacheSettings cacheSettings;
+    private final SettingMapper settingMapper;
     @ComponentImport
     private final CacheManager cacheManager;
     private final Cache<String, Setting> cache;
 
     @Inject
-    public SettingsServiceImpl(ActiveObjects activeObjects, CacheManager cacheManager) {
+    public SettingsServiceImpl(ActiveObjects activeObjects, SettingMapper settingMapper, CacheManager cacheManager) {
         this.activeObjects = activeObjects;
+        this.settingMapper = settingMapper;
         this.cacheManager = cacheManager;
         this.cacheSettings = new CacheSettingsBuilder().remote().replicateViaInvalidation().build();
         this.cache = cacheManager.getCache(SettingsServiceImpl.class.getName() + ".cache", this::loadSettingFromDatabase
@@ -51,21 +54,21 @@ public class SettingsServiceImpl implements SettingsService {
 
     @SneakyThrows
     public Setting createSetting(String name, String value) {
-        try {
-            return activeObjects.executeInTransaction(() -> {
-                Setting newSetting = activeObjects.create(Setting.class,
-                        new DBParam("NAME", name),
-                        new DBParam("VALUE", value)
-                );
-                newSetting.save();
-                return newSetting;
-            });
 
-
-        } catch (Exception e) {
-            log.warn("Ошибка при создании настройки: {}", e.getMessage(), e);
-            return null;
+        Setting setting = loadSettingFromDatabase(name);
+        if (setting != null) {
+            throw new DuplicateKeyException("Setting with name '" + name + "' already exists");
         }
+        return activeObjects.executeInTransaction(() -> {
+            Setting newSetting = activeObjects.create(Setting.class,
+                    new DBParam("NAME", name),
+                    new DBParam("VALUE", value)
+            );
+            newSetting.save();
+            return newSetting;
+        });
+
+
     }
 
 
@@ -80,6 +83,14 @@ public class SettingsServiceImpl implements SettingsService {
             log.error("Error loading setting from cache", e);
             return null;
         }
+    }
+
+    public SettingDto findById(@Nonnull Integer id) {
+//        if () {
+//            throw new IllegalArgumentException("Name must not be blank");
+//        }
+        Setting entity = activeObjects.get(Setting.class, id);
+        return settingMapper.toDto(entity);
     }
 
     public void updateSettings(String name, String newValue) {
@@ -142,7 +153,6 @@ public class SettingsServiceImpl implements SettingsService {
             return java.util.Collections.emptyList();
         }
     }
-
 
 
 }

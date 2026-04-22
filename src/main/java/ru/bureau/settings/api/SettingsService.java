@@ -3,6 +3,7 @@ package ru.bureau.settings.api;
 
 
 
+import ru.bureau.settings.dto.SettingDto;
 import ru.bureau.settings.entity.Setting;
 
 import java.util.List;
@@ -33,4 +34,6 @@ public interface SettingsService {
     boolean deleteSettingByName(String name);
 
     List<Setting> getAllSettings();
+
+    SettingDto findById(Integer id);
 }
