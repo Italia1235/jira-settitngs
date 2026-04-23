@@ -36,4 +36,7 @@ public interface SettingsService {
     List<Setting> getAllSettings();
 
     SettingDto findById(Integer id);
+
+     boolean deleteSettingById(int id);
+     void updateSettings(int settingId, String name, String newValue);
 }

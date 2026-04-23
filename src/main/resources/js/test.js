@@ -1,4 +1,30 @@
 AJS.toInit((jQuery) => {
+    jQuery("<style>")
+        .text(
+            `
+            /* Принудительно задаем стили для всех инпутов в нашей таблице, чтобы они совпадали с родными */
+            #settings-table input {
+                height: 2.14285714em;          /* Высота как в AUI */
+                padding: 3px 4px;              /* Отступы как в AUI */
+                width: 100%;                   /* Растягиваем на всю ширину */
+                box-sizing: border-box;        /* Учитываем паддинги в ширине */
+                border: 2px solid var(--aui-form-field-border-color);
+                border-radius: 3.01px;
+                background-color: var(--aui-form-field-default-bg-color);
+                color: var(--aui-form-field-default-text-color);
+                font-size: inherit;
+                font-family: inherit;
+            }
+
+            /* Для полей readonly (редактирование) делаем фон чуть серым */
+            #settings-table input[readonly] {
+                background-color: var(--aui-input-disabled-bg-color, #f4f5f7);
+                border-color: var(--aui-input-disabled-border-color, #dfe3e6);
+                cursor: not-allowed;
+            }
+            `
+        )
+        .appendTo("head");
     console.log("=== JS ЗАГРУЖЕН ===");
 
     let tableElement = jQuery("#settings-table");
@@ -9,17 +35,35 @@ AJS.toInit((jQuery) => {
         loadingMsg: "Загрузка...",
         noEntriesMsg: "Записей нет.",
         allowCreate: true,
-        allowEdit: false,
-        allowDelete: false,
+        allowDelete: true,
+        deleteConfirmation: true,
         allowReorder: false,
         autoFocus: false,
+        allowEdit: true,
         resources: {
             all: AJS.contextPath() + "/rest/bureau/1/settings",
             self: AJS.contextPath() + "/rest/bureau/1/settings"
         },
         columns: [
-            { id: "name", header: "Название", allowEdit: true, emptyText: "-" },
-            { id: "value", header: "Значение", allowEdit: true, emptyText: "-" }
+            {
+                id: "name",
+                header: "Название",
+                allowEdit: false,  // <-- Ключевое: отключаем редактирование колонки
+                emptyText: "-",
+                createView: Backbone.View.extend({
+                    render: function() {
+                        var input = jQuery('<input type="text" name="name" class="aui-input aui-input-full">');
+                        if (this.model) input.val(this.model.get("name"));
+                        return input;
+                    }
+                })
+            },
+            {
+                id: "value",
+                header: "Значение",
+                allowEdit: true,   // <-- Это значение можно редактировать
+                emptyText: "-"
+            }
         ]
     };
 

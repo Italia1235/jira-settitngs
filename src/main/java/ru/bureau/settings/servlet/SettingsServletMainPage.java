@@ -28,17 +28,14 @@ public class SettingsServletMainPage extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        // Получаем путь к .vm шаблону из init-param
         String templatePath = getInitParameter(TEMPLATE_PATH_PARAM_NAME);
         ApplicationUser user = ComponentAccessor.getJiraAuthenticationContext().getLoggedInUser();
         if (user == null || !userPermissionChecker.isUserHasPermissionForMappingManagement(user)) {
-            // 2. Если не админ — сразу запрещаем доступ (код 403)
             response.sendError(HttpServletResponse.SC_FORBIDDEN, "Доступ запрещен");
             return;
         }
         // Данные, которые мы передадим в шаблон .vm
         Map<String, Object> context = new HashMap<>();
-        context.put("greeting", "Привет, мир!");
 
         try {
             // Рендерим шаблон

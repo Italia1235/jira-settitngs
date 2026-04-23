@@ -99,4 +99,73 @@ public class SettingsRestApi {
 
     }
 
+
+    @DELETE
+    @Path("/{settingId}")
+
+    public Response deleteSetting(@PathParam("settingId") String settingIdParam) {
+        try {
+            int settingId = Integer.parseInt(settingIdParam);
+
+            log.info("DELETE: Удаление настройки с ID: {}", settingId);
+
+            // 1. Сначала проверяем, существует ли настройка
+            SettingDto existing = settingsService.findById(settingId);
+            if (existing == null) {
+                log.warn("Попытка удалить несуществующую настройку: {}", settingId);
+                return Response.status(Response.Status.NOT_FOUND)
+                        .entity(new ErrorMessage("Настройка не найдена."))
+                        .build();
+            }
+
+            // 2. Удаляем из БД (ваш сервис должен уметь удалять)
+            settingsService.deleteSettingByName(existing.getName());
+
+            // 3. Возвращаем 204 No Content (стандарт для успешного удаления)
+            return Response.noContent().build();
+
+        } catch (NumberFormatException e) {
+            log.warn("Некорректный ID настройки: {}", settingIdParam);
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(new ErrorMessage("Некорректный формат ID."))
+                    .build();
+
+        } catch (Exception e) {
+            log.error("Ошибка при удалении настройки", e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(new ErrorMessage("Ошибка при удалении: " + e.getMessage()))
+                    .build();
+        }
+    }
+
+    @PUT
+    @Path("/{settingId}")
+
+    public Response updateSetting(@PathParam("settingId") String settingIdParam, SettingDto dto) {
+        try {
+            int settingId = Integer.parseInt(settingIdParam);
+
+            // Получаем существующую настройку
+            SettingDto existing = settingsService.findById(settingId);
+            if (existing == null) {
+                return Response.status(Response.Status.NOT_FOUND)
+                        .entity(new ErrorMessage("Настройка не найдена."))
+                        .build();
+            }
+
+            // Обновляем ТОЛЬКО значение (value)
+            // Имя (name) берем из БД — оно не могло измениться на клиенте
+            existing.setValue(dto.getValue());
+            // existing.setName(existing.getName()); // Игнорируем имя, оставляем старое
+            settingsService.updateSettings(settingId,existing.getName(), existing.getValue());
+
+            return Response.ok(existing).build();
+
+        } catch (Exception e) {
+            log.error("Ошибка обновления", e);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(new ErrorMessage("Ошибка при обновлении: " + e.getMessage()))
+                    .build();
+        }
+    }
 }

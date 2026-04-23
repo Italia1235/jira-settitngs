@@ -107,6 +107,25 @@ public class SettingsServiceImpl implements SettingsService {
         });
     }
 
+    public void updateSettings(int settingId, String name, String newValue) {
+        activeObjects.executeInTransaction(() -> {
+            Setting[] settings = activeObjects.find(Setting.class, "ID = ?", settingId);
+            if (settings.length > 0) {
+                Setting setting = settings[0];
+                if (!name.equals(setting.getName())) {
+                    cache.remove(setting.getName());
+                }
+                setting.setValue(newValue);
+                setting.save();
+                cache.remove(setting.getName());
+                log.info("Setting {} (ID: {}) updated to value: {}", setting.getName(), settingId, newValue);
+            } else {
+                log.warn("Setting with ID {} not found", settingId);
+            }
+            return null;
+        });
+    }
+
     private Setting loadSettingFromDatabase(@Nonnull String name) {
 
         Setting[] settings = activeObjects.find(Setting.class, "NAME = ?", name);
@@ -154,5 +173,40 @@ public class SettingsServiceImpl implements SettingsService {
         }
     }
 
+    @Override
+    public boolean deleteSettingById(int id) {
+        String deletedName = null;
+
+        try {
+            deletedName = activeObjects.executeInTransaction(() -> {
+                // 1. Находим запись по ID
+                Setting[] setting = activeObjects.find(Setting.class, "ID = ?", id);
+                if (setting.length < 1) {
+                    log.warn("Setting with ID {} not found", id);
+                    return null;
+                }
+
+                // 2. Запоминаем имя (нужно для очистки кэша)
+                String name = setting[0].getName();
+
+                // 3. Удаляем из БД
+                activeObjects.delete(setting);
+                log.info("Setting '{}' deleted successfully, ID: {}", name, id);
+
+                return name;
+            });
+
+            // 4. Очищаем кэш, только если запись была удалена
+            if (deletedName != null) {
+                cache.remove(deletedName);
+                log.info("Cache entry for '{}' removed", deletedName);
+            }
+
+            return deletedName != null;
+        } catch (Exception e) {
+            log.error("Error deleting setting with ID {}", id, e);
+            throw new RuntimeException("Failed to delete setting with ID " + id, e);
+        }
+    }
 
 }
