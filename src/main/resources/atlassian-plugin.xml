@@ -60,4 +60,16 @@
         <description>The AO module for storing issue log messages at db.</description>
         <entity>ru.bureau.settings.entity.Setting</entity>
     </ao>
+
+    <!-- 6. Секция в админ панели -->
+    <web-section key="bureau-admin-section" location="admin_plugins_menu">
+        <label>Bureau Settings Plugin</label>
+    </web-section>
+
+    <!-- 7. Кнопка в админ панели -->
+    <web-item key="bureau-admin-button" name="Bureau Settings Button" section="admin_plugins_menu/bureau-admin-section">
+        <description>Link to Bureau plugin settings</description>
+        <label> Settings</label>
+        <link linkId="bureau-admin-link">/plugins/servlet/bureau/settings</link>
+    </web-item>
 </atlassian-plugin>

@@ -15,10 +15,7 @@ import javax.inject.Named;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Path("/settings") // ← КОРНЕВОЙ ПУТЬ REST
@@ -27,7 +24,7 @@ import java.util.stream.Collectors;
 public class SettingsRestApi {
 
     private static final Logger log = LoggerFactory.getLogger(SettingsRestApi.class);
-    private SettingsService settingsService;
+    private final SettingsService settingsService;
     private final SettingMapper settingMapper;
 
     @Inject
@@ -69,13 +66,13 @@ public class SettingsRestApi {
     public Response getSetting(@PathParam("settingId") String mappingIdParam) {
         final int settingId = Integer.parseInt(mappingIdParam);
         SettingDto sd = settingsService.findById(settingId);
-        return Response.ok(sd,MediaType.APPLICATION_JSON).build();
+        return Response.ok(sd, MediaType.APPLICATION_JSON).build();
     }
 
 
     @POST
     @Path("/")
-    public Response createSetting(SettingDto dto){
+    public Response createSetting(SettingDto dto) {
         try {
             String name = dto.getName();
             String value = dto.getValue();
@@ -86,14 +83,13 @@ public class SettingsRestApi {
             Setting set = settingsService.createSetting(name, value);
             SettingDto settingDto = settingMapper.toDto(set);
             return Response.ok(settingDto).build();
-        }
-        catch (DuplicateKeyException e) {
+        } catch (DuplicateKeyException e) {
             log.warn("Дубликат: {}", e.getMessage());
             // Возвращаем ПРОСТОЙ JSON
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(new ErrorMessage(e.getMessage())) // <-- Ключевое
                     .build();
-        }catch (Exception e){
+        } catch (Exception e) {
             return Response.status(Response.Status.CONFLICT).build();
         }
 
@@ -156,8 +152,8 @@ public class SettingsRestApi {
             // Обновляем ТОЛЬКО значение (value)
             // Имя (name) берем из БД — оно не могло измениться на клиенте
             existing.setValue(dto.getValue());
-            // existing.setName(existing.getName()); // Игнорируем имя, оставляем старое
-            settingsService.updateSettings(settingId,existing.getName(), existing.getValue());
+
+            settingsService.updateSettings(settingId, existing.getName(), existing.getValue());
 
             return Response.ok(existing).build();
 

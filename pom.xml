@@ -71,12 +71,7 @@
             <version>5.2.0</version>
             <scope>provided</scope>
         </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>1.6.6</version>
-            <scope>provided</scope>
-        </dependency>
+
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
@@ -162,6 +157,7 @@
 
     <build>
         <plugins>
+
             <plugin>
                 <groupId>com.atlassian.maven.plugins</groupId>
                 <artifactId>jira-maven-plugin</artifactId>
@@ -169,6 +165,7 @@
                 <extensions>true</extensions>
                 <configuration>
                     <productVersion>${jira.version}</productVersion>
+
                     <productDataVersion>${jira.version}</productDataVersion>
                     <!-- Uncomment to install TestKit backdoor in JIRA. -->
                     <!--
@@ -226,6 +223,7 @@
     <properties>
         <jira.version>8.22.0</jira.version>
         <amps.version>8.1.2</amps.version>
+
         <plugin.testrunner.version>2.0.2</plugin.testrunner.version>
         <atlassian.spring.scanner.version>2.1.7</atlassian.spring.scanner.version>
         <!-- This property ensures consistency between the key in atlassian-plugin.xml and the OSGi bundle's key. -->

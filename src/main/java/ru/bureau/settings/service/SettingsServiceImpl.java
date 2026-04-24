@@ -78,11 +78,31 @@ public class SettingsServiceImpl implements SettingsService {
         }
 
         try {
-            return cache.get(name);
+            Setting setting = cache.get(name);
+            if (setting != null) {
+                log.info("Setting '{}' loaded from cache", name);
+            } else {
+                log.info("Setting '{}' not found in cache, loading from database", name);
+            }
+            return setting;
         } catch (Exception e) {
             log.error("Error loading setting from cache", e);
             return null;
         }
+
+    }
+    /**
+     * Returns the value of a setting by its name.
+     * This method bypasses the DTO mapping and returns the raw value.
+     *
+     * @param name The name of the setting to retrieve. Must not be blank.
+     * @return The value of the setting if found, null otherwise.
+     * @throws IllegalArgumentException if name is blank.
+     */
+    @Override
+    public String getSettingValue(String name) {
+        Setting setting = getSetting(name);
+        return setting != null ? setting.getValue() : null;
     }
 
     public SettingDto findById(@Nonnull Integer id) {

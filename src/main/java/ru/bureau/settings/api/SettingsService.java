@@ -39,4 +39,5 @@ public interface SettingsService {
 
      boolean deleteSettingById(int id);
      void updateSettings(int settingId, String name, String newValue);
+    String getSettingValue(String name);
 }
