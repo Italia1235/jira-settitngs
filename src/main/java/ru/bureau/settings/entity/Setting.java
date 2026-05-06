@@ -15,4 +15,9 @@ public interface Setting extends Entity {
     @NotNull @StringLength(StringLength.UNLIMITED)
     String getValue();
     void setValue(String value);
+
+
+    @StringLength(StringLength.UNLIMITED)
+    String getExplanation();
+    void setExplanation(String explanation);
 }

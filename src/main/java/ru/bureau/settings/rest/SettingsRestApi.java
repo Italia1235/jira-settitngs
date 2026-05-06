@@ -44,7 +44,8 @@ public class SettingsRestApi {
                     .map(setting -> new SettingDto(
                             setting.getID(),
                             setting.getName(),
-                            setting.getValue()
+                            setting.getValue(),
+                            setting.getExplanation()
                     ))
                     .collect(Collectors.toList());
 
@@ -76,11 +77,12 @@ public class SettingsRestApi {
         try {
             String name = dto.getName();
             String value = dto.getValue();
+            String explanation = dto.getExplanation();
             if (StringUtils.isEmpty(name) || StringUtils.isEmpty(value)) {
                 ErrorMessage errorMessage = new ErrorMessage("Mapping key and value can not be empty.");
                 return Response.status(Response.Status.BAD_REQUEST).entity(errorMessage).build();
             }
-            Setting set = settingsService.createSetting(name, value);
+            Setting set = settingsService.createSetting(name, value,explanation);
             SettingDto settingDto = settingMapper.toDto(set);
             return Response.ok(settingDto).build();
         } catch (DuplicateKeyException e) {
@@ -136,7 +138,6 @@ public class SettingsRestApi {
 
     @PUT
     @Path("/{settingId}")
-
     public Response updateSetting(@PathParam("settingId") String settingIdParam, SettingDto dto) {
         try {
             int settingId = Integer.parseInt(settingIdParam);
@@ -149,11 +150,15 @@ public class SettingsRestApi {
                         .build();
             }
 
-            // Обновляем ТОЛЬКО значение (value)
-            // Имя (name) берем из БД — оно не могло измениться на клиенте
-            existing.setValue(dto.getValue());
+            // Обновляем значение и объяснение
+            if (dto.getValue() != null) {
+                existing.setValue(dto.getValue());
+            }
 
-            settingsService.updateSettings(settingId, existing.getName(), existing.getValue());
+            if (dto.getExplanation() != null) {
+                existing.setExplanation(dto.getExplanation());
+            }
+            settingsService.updateSettings(settingId, existing.getName(), existing.getValue(), existing.getExplanation());
 
             return Response.ok(existing).build();
 

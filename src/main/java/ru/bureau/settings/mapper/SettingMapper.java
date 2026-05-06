@@ -10,7 +10,7 @@ public class SettingMapper {
 
     public SettingDto toDto(Setting entity){
         return Optional.ofNullable(entity).map(e-> {
-            return new SettingDto(e.getID(),e.getName(), e.getValue());
+            return new SettingDto(e.getID(),e.getName(), e.getValue(), e.getExplanation());
         }).orElse(null);
     }
 
@@ -18,5 +18,6 @@ public class SettingMapper {
     public void mapDTOtoEntity(SettingDto dto , Setting entity){
         entity.setValue(dto.getValue());
         entity.setName(dto.getName());
+        entity.setExplanation(dto.getExplanation());
     }
 }

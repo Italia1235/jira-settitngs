@@ -18,7 +18,7 @@ public interface SettingsService {
      * @return The created Setting object.
      * @throws IllegalArgumentException if name or value is blank, or if a setting with the given name already exists.
      */
-    Setting createSetting(String name, String value);
+    Setting createSetting(String name, String value,String exp);
 
     /**
      * Retrieves a setting by its name.
@@ -39,5 +39,7 @@ public interface SettingsService {
 
      boolean deleteSettingById(int id);
      void updateSettings(int settingId, String name, String newValue);
-    String getSettingValue(String name);
+     void updateSettings(int settingId, String name, String newValue, String explanation);
+     void updateSettingsExplanation(int settingId, String explanation);
+     String getSettingValue(String name);
 }

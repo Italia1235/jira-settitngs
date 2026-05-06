@@ -63,6 +63,12 @@ AJS.toInit((jQuery) => {
                 header: "Значение",
                 allowEdit: true,   // <-- Это значение можно редактировать
                 emptyText: "-"
+            },
+            {
+                id: "explanation",
+                header: "Описание",
+                allowEdit: true,   // <-- Это значение можно редактировать
+                emptyText: "-"
             }
         ]
     };
