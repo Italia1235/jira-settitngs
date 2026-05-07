@@ -1,10 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
        xmlns:atlassian-scanner="http://www.atlassian.com/schema/atlassian-scanner/2"
-       xsi:schemaLocation="http://www.springframework.org/schema/beans
-        http://www.springframework.org/schema/beans/spring-beans.xsd
-        http://www.atlassian.com/schema/atlassian-scanner
-        http://www.atlassian.com/schema/atlassian-scanner/atlassian-scanner.xsd">
+       xsi:schemaLocation="
+           http://www.springframework.org/schema/beans
+           http://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.springframework.org/schema/context
+           http://www.springframework.org/schema/context/spring-context.xsd
+           http://www.atlassian.com/schema/atlassian-scanner
+           http://www.atlassian.com/schema/atlassian-scanner/atlassian-scanner.xsd">
+
+    <!-- 1. Оставляем старый сканер для существующего кода -->
     <atlassian-scanner:scan-indexes/>
+
+    <!-- 2. Добавляем сканирование для Java Config (обязательно указываем базовый пакет) -->
+    <context:component-scan base-package="ru.bureau.settings.configuration"/>
+
 </beans>

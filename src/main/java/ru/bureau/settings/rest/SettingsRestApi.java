@@ -117,9 +117,8 @@ public class SettingsRestApi {
             }
 
             // 2. Удаляем из БД (ваш сервис должен уметь удалять)
-            settingsService.deleteSettingByName(existing.getName());
+            settingsService.deleteSettingById(settingId);
 
-            // 3. Возвращаем 204 No Content (стандарт для успешного удаления)
             return Response.noContent().build();
 
         } catch (NumberFormatException e) {

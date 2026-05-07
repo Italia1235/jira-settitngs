@@ -119,6 +119,39 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>com.atlassian.audit</groupId>
+            <artifactId>atlassian-audit-api</artifactId>
+            <version>1.17.1</version>
+            <scope>provided</scope>
+        </dependency>
+
+
+
+        <dependency>
+            <groupId>org.osgi</groupId>
+            <artifactId>osgi.core</artifactId>
+            <version>8.0.0</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-beans</artifactId>
+            <version>5.3.39-atlassian-3</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+            <version>5.3.39-atlassian-3</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+        <groupId>com.atlassian.plugins</groupId>
+        <artifactId>atlassian-plugins-osgi-javaconfig</artifactId>
+        <version>0.6.1</version>
+    </dependency>
+
+        <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>1.7.30</version>

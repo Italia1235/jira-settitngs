@@ -1,6 +1,5 @@
 package ru.bureau.settings.service;
 
-import com.atlassian.activeobjects.external.ActiveObjects;
 import com.atlassian.cache.Cache;
 import com.atlassian.cache.CacheManager;
 import com.atlassian.cache.CacheSettings;
@@ -8,15 +7,16 @@ import com.atlassian.cache.CacheSettingsBuilder;
 import com.atlassian.plugin.spring.scanner.annotation.export.ExportAsService;
 import com.atlassian.plugin.spring.scanner.annotation.imports.ComponentImport;
 import lombok.SneakyThrows;
-import net.java.ao.DBParam;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.bureau.settings.api.SettingsService;
+import ru.bureau.settings.dao.SettingDao;
 import ru.bureau.settings.dto.SettingDto;
 import ru.bureau.settings.entity.Setting;
 import ru.bureau.settings.error.DuplicateKeyException;
 import ru.bureau.settings.mapper.SettingMapper;
+import ru.bureau.settings.audit.AuditService;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
@@ -30,19 +30,20 @@ import java.util.List;
 
 public class SettingsServiceImpl implements SettingsService {
     private static final Logger log = LoggerFactory.getLogger(SettingsServiceImpl.class);
-    @ComponentImport
-    private final ActiveObjects activeObjects;
+    private final SettingDao settingDao;
     private final CacheSettings cacheSettings;
     private final SettingMapper settingMapper;
     @ComponentImport
     private final CacheManager cacheManager;
     private final Cache<String, Setting> cache;
+    private final AuditService auditService;
 
     @Inject
-    public SettingsServiceImpl(ActiveObjects activeObjects, SettingMapper settingMapper, CacheManager cacheManager) {
-        this.activeObjects = activeObjects;
+    public SettingsServiceImpl(SettingDao settingDao, SettingMapper settingMapper, CacheManager cacheManager, AuditService auditService) {
+        this.settingDao = settingDao;
         this.settingMapper = settingMapper;
         this.cacheManager = cacheManager;
+        this.auditService = auditService;
         this.cacheSettings = new CacheSettingsBuilder().remote().replicateViaInvalidation().build();
         this.cache = cacheManager.getCache(SettingsServiceImpl.class.getName() + ".cache", this::loadSettingFromDatabase
                 , cacheSettings
@@ -59,15 +60,9 @@ public class SettingsServiceImpl implements SettingsService {
         if (setting != null) {
             throw new DuplicateKeyException("Setting with name '" + name + "' already exists");
         } //explanation
-        return activeObjects.executeInTransaction(() -> {
-            Setting newSetting = activeObjects.create(Setting.class,
-                    new DBParam("NAME", name),
-                    new DBParam("VALUE", value),
-                    new DBParam("EXPLANATION",exp)
-            );
-            newSetting.save();
-            return newSetting;
-        });
+        Setting newSetting = settingDao.create(name, value, exp);
+        auditService.logCreated(name, value);
+        return newSetting;
 
 
     }
@@ -110,134 +105,96 @@ public class SettingsServiceImpl implements SettingsService {
 //        if () {
 //            throw new IllegalArgumentException("Name must not be blank");
 //        }
-        Setting entity = activeObjects.get(Setting.class, id);
+        Setting entity = settingDao.findById(id);
         return settingMapper.toDto(entity);
     }
 
     public void updateSettings(String name, String newValue) {
-        activeObjects.executeInTransaction(() -> {
-            Setting[] settings = activeObjects.find(Setting.class, "NAME = ?", name);
-            if (settings.length > 0) {
-                Setting setting = settings[0];
-                setting.setValue(newValue);
-                setting.save();
-                cache.remove(name);
-
-            }
-            return null;
-        });
+        settingDao.update(settingDao.findByName(name), newValue);
+        // Получаем старое значение для аудита
+        Setting oldSetting = settingDao.findByName(name);
+        if (oldSetting != null) {
+            auditService.logUpdated(name, oldSetting.getValue(), newValue);
+        }
+        cache.remove(name);
     }
 
     public void updateSettings(int settingId, String name, String newValue) {
-        activeObjects.executeInTransaction(() -> {
-            Setting[] settings = activeObjects.find(Setting.class, "ID = ?", settingId);
-            if (settings.length > 0) {
-                Setting setting = settings[0];
-                if (!name.equals(setting.getName())) {
-                    cache.remove(setting.getName());
-                }
-                setting.setValue(newValue);
-                setting.save();
+        Setting setting = settingDao.findById(settingId);
+        if (setting != null) {
+            // Проверяем, изменилось ли имя
+            if (!name.equals(setting.getName())) {
                 cache.remove(setting.getName());
-                log.info("Setting {} (ID: {}) updated to value: {}", setting.getName(), settingId, newValue);
-            } else {
-                log.warn("Setting with ID {} not found", settingId);
             }
-            return null;
-        });
+            settingDao.updateName(setting, name);
+            settingDao.update(setting, newValue);
+            cache.remove(name);
+            log.info("Setting {} (ID: {}) updated to value: {}", name, settingId, newValue);
+            
+            // Аудит: получаем старое значение для аудита
+            Setting oldSetting = settingDao.findByName(name);
+            if (oldSetting != null) {
+                auditService.logUpdated(name, oldSetting.getValue(), newValue);
+            }
+        } else {
+            log.warn("Setting with ID {} not found", settingId);
+        }
     }
 
     public void updateSettings(int settingId, String name, String newValue, String explanation) {
-        activeObjects.executeInTransaction(() -> {
-            Setting[] settings = activeObjects.find(Setting.class, "ID = ?", settingId);
+        Setting setting = settingDao.findById(settingId);
+        if (setting != null) {
+            boolean nameChanged = !setting.getName().equals(name);
 
-            if (settings.length > 0) {
-                Setting setting = settings[0];
-                boolean nameChanged = !setting.getName().equals(name);
-
-                if (nameChanged) {
-                    cache.remove(setting.getName()); // Удалить по старому
-                }
-
-                setting.setValue(newValue);
-                // Устанавливаем объяснение только если оно не null (опциональность)
-                if (explanation != null) {
-                    setting.setExplanation(explanation);
-                }
-
-                setting.save();
-
-                // Удалить по новому имени (или старому, если имя не менялось)
-                String cacheKey = setting.getName();
-                cache.remove(cacheKey);
-
-                log.info("Setting {} (ID: {}) updated to value: {} (Explanation: {})",
-                        cacheKey, settingId, newValue, explanation);
-            } else {
-                log.warn("Setting with ID {} not found", settingId);
+            if (nameChanged) {
+                cache.remove(setting.getName()); // Удалить по старому
             }
 
-            return null;
-        });
+            settingDao.updateWithExplanation(setting, newValue, explanation);
+            // Удалить по новому имени (или старому, если имя не менялось)
+            String cacheKey = name;
+            cache.remove(cacheKey);
+
+            log.info("Setting {} (ID: {}) updated to value: {} (Explanation: {})",
+                    cacheKey, settingId, newValue, explanation);
+            
+            // Аудит: получаем старое значение для аудита
+            Setting oldSetting = settingDao.findByName(name);
+            if (oldSetting != null) {
+                auditService.logUpdated(name, oldSetting.getValue(), newValue);
+            }
+        } else {
+            log.warn("Setting with ID {} not found", settingId);
+        }
     }
     
     public void updateSettingsExplanation(int settingId, String explanation) {
-        activeObjects.executeInTransaction(() -> {
-            Setting[] settings = activeObjects.find(Setting.class, "ID = ?", settingId);
-            if (settings.length > 0) {
-                Setting setting = settings[0];
-                setting.setExplanation(explanation);
-                setting.save();
-                cache.remove(setting.getName());
-                log.info("Setting {} (ID: {}) explanation updated to: {}", setting.getName(), settingId, explanation);
-            } else {
-                log.warn("Setting with ID {} not found", settingId);
+        Setting setting = settingDao.findById(settingId);
+        if (setting != null) {
+            settingDao.updateWithExplanation(setting, setting.getValue(), explanation);
+            cache.remove(setting.getName());
+            log.info("Setting {} (ID: {}) explanation updated to: {}", setting.getName(), settingId, explanation);
+            
+            // Аудит: получаем старое значение для аудита
+            Setting oldSetting = settingDao.findByName(setting.getName());
+            if (oldSetting != null) {
+                auditService.logUpdated(setting.getName(), oldSetting.getValue(), setting.getValue());
             }
-            return null;
-        });
+        } else {
+            log.warn("Setting with ID {} not found", settingId);
+        }
     }
 
     private Setting loadSettingFromDatabase(@Nonnull String name) {
-
-        Setting[] settings = activeObjects.find(Setting.class, "NAME = ?", name);
-        if (settings.length > 0) {
-            return settings[0];
-        } else {
-            log.warn("Setting '{}' not found in database", name);
-            return null;
-        }
+        return settingDao.findByName(name);
     }
 
-    public boolean deleteSettingByName(@Nonnull String name) {
-        if (StringUtils.isBlank(name)) {
-            throw new IllegalArgumentException("Name must not be blank");
-        }
 
-        try {
-            return activeObjects.executeInTransaction(() -> {
-                int deleted = activeObjects.deleteWithSQL(Setting.class, "NAME = ?", name);
-
-                if (deleted > 0) {
-                    cache.remove(name);
-                    log.info("Setting '{}' successfully deleted, rows affected: {}", name, deleted);
-                    return true;
-                } else {
-                    log.error("Setting '{}' not found for deletion", name);
-                    return false;
-                }
-            });
-        } catch (Exception e) {
-            log.error("Error deleting setting '{}'", name, e);
-            throw new RuntimeException("Failed to delete setting: " + name, e);
-        }
-    }
 
     @Override
     public List<Setting> getAllSettings() {
         try {
-            Setting[] all = activeObjects.find(Setting.class);
-            // Конвертируем массив в список
-            return Arrays.asList(all);
+            return settingDao.findAll();
         } catch (Exception e) {
             log.error("Ошибка получения всех настроек", e);
             return java.util.Collections.emptyList();
@@ -249,26 +206,15 @@ public class SettingsServiceImpl implements SettingsService {
         String deletedName = null;
 
         try {
-            deletedName = activeObjects.executeInTransaction(() -> {
-                // 1. Находим запись по ID
-                Setting[] setting = activeObjects.find(Setting.class, "ID = ?", id);
-                if (setting.length < 1) {
-                    log.warn("Setting with ID {} not found", id);
-                    return null;
-                }
-
-                // 2. Запоминаем имя (нужно для очистки кэша)
-                String name = setting[0].getName();
-
-                // 3. Удаляем из БД
-                activeObjects.delete(setting);
-                log.info("Setting '{}' deleted successfully, ID: {}", name, id);
-
-                return name;
-            });
-
-            // 4. Очищаем кэш, только если запись была удалена
+            deletedName = settingDao.deleteById(id);
+            
+            // Если запись была удалена, то делаем аудит
             if (deletedName != null) {
+                // Получаем старое значение для аудита
+                Setting oldSetting = settingDao.findByName(deletedName);
+                if (oldSetting != null) {
+                    auditService.logDeleted(deletedName, oldSetting.getValue());
+                }
                 cache.remove(deletedName);
                 log.info("Cache entry for '{}' removed", deletedName);
             }
@@ -279,5 +225,4 @@ public class SettingsServiceImpl implements SettingsService {
             throw new RuntimeException("Failed to delete setting with ID " + id, e);
         }
     }
-
 }

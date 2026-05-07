@@ -31,7 +31,6 @@ public interface SettingsService {
 
     void updateSettings(String name, String newValue);
 
-    boolean deleteSettingByName(String name);
 
     List<Setting> getAllSettings();
 
