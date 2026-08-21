@@ -3,6 +3,7 @@ package ru.bureau.settings.dao;
 import com.atlassian.activeobjects.external.ActiveObjects;
 import com.atlassian.plugin.spring.scanner.annotation.imports.ComponentImport;
 import net.java.ao.DBParam;
+import ru.bureau.settings.dto.SettingsExportDto;
 import ru.bureau.settings.entity.Setting;
 
 import javax.inject.Named;
@@ -81,6 +82,35 @@ public class SettingDao {
                 String name = setting[0].getName();
                 activeObjects.delete(setting);
                 return name;
+            }
+            return null;
+        });
+    }
+
+    /**
+     * Удаляет все настройки из БД.
+     * Используется при импорте для полной замены настроек.
+     */
+    public void deleteAll() {
+        activeObjects.executeInTransaction(() -> {
+            activeObjects.deleteWithSQL(Setting.class, "1 = 1");
+            return null;
+        });
+    }
+
+    /**
+     * Создаёт несколько настроек в одной транзакции.
+     * Используется при импорте для атомарности (все или ничего).
+     */
+    public void createAll(List<SettingsExportDto> settings) {
+        activeObjects.executeInTransaction(() -> {
+            for (SettingsExportDto dto : settings) {
+                Setting newSetting = activeObjects.create(Setting.class,
+                        new DBParam("NAME", dto.getName()),
+                        new DBParam("VALUE", dto.getValue()),
+                        new DBParam("EXPLANATION", dto.getExplanation())
+                );
+                newSetting.save();
             }
             return null;
         });

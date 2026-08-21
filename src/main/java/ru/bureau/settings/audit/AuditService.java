@@ -1,9 +1,12 @@
 package ru.bureau.settings.audit;
 
 import com.atlassian.audit.entity.AuditAttribute;
+import ru.bureau.settings.dto.SettingsExportDto;
 
 import javax.inject.Named;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 @Named
 public class AuditService {
@@ -39,7 +42,7 @@ public class AuditService {
 
     public void logDeleted(String name, String oldValue) {
         // Создаем атрибут для хранения старого значения
-        AuditAttribute oldAttributeValue = new AuditAttribute("OLD_VALUE", oldValue);
+        AuditAttribute oldAttributeValue = new AuditAttribute("VALUE", oldValue);
         
         auditWriter.logDelete(
                 "SETTING",
@@ -47,6 +50,28 @@ public class AuditService {
                 name,
                 oldValue,
                 Collections.singletonList(oldAttributeValue)
+        );
+    }
+
+    /**
+     * Логирует импорт настроек, записывая все старые настройки (до замены).
+     *
+     * @param oldSettings список старых настроек, которые были заменены
+     */
+    public void logImport(List<SettingsExportDto> oldSettings) {
+        List<AuditAttribute> attributes = new ArrayList<>();
+        if (oldSettings != null) {
+            for (SettingsExportDto setting : oldSettings) {
+                attributes.add(new AuditAttribute("OLD_" + setting.getName(), setting.getValue()));
+            }
+        }
+
+        auditWriter.logImport(
+                "SETTINGS",
+                "import",
+                "settings-import",
+                "",
+                attributes
         );
     }
 }

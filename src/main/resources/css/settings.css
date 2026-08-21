@@ -1,0 +1,108 @@
+/* Оверлей за модальным окном (блокирует клики по странице) */
+#import-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 9998;
+}
+
+/* Диалог подтверждения поверх оверлея */
+#import-confirm-dialog {
+    z-index: 9999;
+}
+
+/* Панель действий на странице настроек (снизу таблицы) */
+.settings-toolbar {
+    margin-top: 20px;
+    padding: 10px 0;
+    border-top: 1px solid #dfe1e6;
+}
+
+/* Кнопка выгрузки настроек */
+#export-settings-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+#export-settings-btn .aui-icon {
+    margin-right: 4px;
+}
+
+#export-settings-btn:hover {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+#export-settings-btn:active {
+    transform: translateY(1px);
+}
+
+/* Панель загрузки настроек */
+.settings-import-panel {
+    margin-top: 20px;
+    padding: 15px;
+    border: 1px solid #dfe1e6;
+    border-radius: 4px;
+    background-color: #fafbfc;
+}
+
+.settings-import-panel h3 {
+    margin-top: 0;
+    margin-bottom: 4px;
+    font-size: 16px;
+}
+
+.settings-import-panel .aui-description {
+    margin-top: 0;
+    margin-bottom: 12px;
+    color: #5e6c84;
+}
+
+.settings-import-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.settings-import-file-name {
+    font-size: 13px;
+    color: #172b4d;
+    font-style: italic;
+}
+
+#import-settings-choose-btn,
+#import-settings-apply-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    font-size: 14px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+#import-settings-choose-btn .aui-icon,
+#import-settings-apply-btn .aui-icon {
+    margin-right: 4px;
+}
+
+#import-settings-choose-btn:hover,
+#import-settings-apply-btn:hover:not([disabled]) {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+#import-settings-apply-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

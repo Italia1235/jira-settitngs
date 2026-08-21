@@ -24,6 +24,7 @@ public class AuditWriter {
     private static final String SUMMARY_DELETE_KEY = "plugin.settings.audit.delete";
     private static final String SUMMARY_CREATE_KEY = "com.example.audit.summary.create";
     private static final String SUMMARY_UPDATE_KEY = "com.example.audit.summary.update";
+    private static final String SUMMARY_IMPORT_KEY = "plugin.settings.audit.import";
 
 
     public AuditWriter(AuditService auditService) {
@@ -34,6 +35,12 @@ public class AuditWriter {
                           String authorKey, List<AuditAttribute> extraAttributes) {
 
         auditResource(resourceType, resourceId, resourceName, SUMMARY_DELETE_KEY, CoverageLevel.BASE, extraAttributes);
+    }
+
+    public void logImport(String resourceType, String resourceId, String resourceName,
+                          String authorKey, List<AuditAttribute> extraAttributes) {
+
+        auditResource(resourceType, resourceId, resourceName, SUMMARY_IMPORT_KEY, CoverageLevel.BASE, extraAttributes);
     }
 
 

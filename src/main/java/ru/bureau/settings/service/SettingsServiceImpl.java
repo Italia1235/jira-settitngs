@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import ru.bureau.settings.api.SettingsService;
 import ru.bureau.settings.dao.SettingDao;
 import ru.bureau.settings.dto.SettingDto;
+import ru.bureau.settings.dto.SettingsExportDto;
 import ru.bureau.settings.entity.Setting;
 import ru.bureau.settings.error.DuplicateKeyException;
 import ru.bureau.settings.mapper.SettingMapper;
@@ -203,26 +204,63 @@ public class SettingsServiceImpl implements SettingsService {
 
     @Override
     public boolean deleteSettingById(int id) {
-        String deletedName = null;
-
         try {
-            deletedName = settingDao.deleteById(id);
+            // Сначала получаем информацию о настройке перед удалением
+            Setting settingToDelete = settingDao.findById(id);
+            
+            // Выполняем удаление
+            String deletedName = settingDao.deleteById(id);
             
             // Если запись была удалена, то делаем аудит
-            if (deletedName != null) {
-                // Получаем старое значение для аудита
-                Setting oldSetting = settingDao.findByName(deletedName);
-                if (oldSetting != null) {
-                    auditService.logDeleted(deletedName, oldSetting.getValue());
-                }
-                cache.remove(deletedName);
-                log.info("Cache entry for '{}' removed", deletedName);
+            if (deletedName != null && settingToDelete != null) {
+                // Записываем в аудит только если у нас есть данные для записи
+                auditService.logDeleted(settingToDelete.getName(), settingToDelete.getValue());
+                cache.remove(settingToDelete.getName());
+                log.info("Cache entry for '{}' removed", settingToDelete.getName());
             }
 
             return deletedName != null;
         } catch (Exception e) {
             log.error("Error deleting setting with ID {}", id, e);
             throw new RuntimeException("Failed to delete setting with ID " + id, e);
+        }
+    }
+
+    @Override
+    public List<SettingsExportDto> exportSettings() {
+        try {
+            return settingDao.findAll().stream()
+                    .map(settingMapper::toExportDto)
+                    .collect(java.util.stream.Collectors.toList());
+        } catch (Exception e) {
+            log.error("Ошибка экспорта настроек", e);
+            return java.util.Collections.emptyList();
+        }
+    }
+
+    @Override
+    public void importSettings(List<SettingsExportDto> settings) {
+        if (settings == null) {
+            throw new IllegalArgumentException("Settings list must not be null");
+        }
+        try {
+            // 0. Сохраняем старые настройки для аудита (до удаления)
+            List<SettingsExportDto> oldSettings = settingDao.findAll().stream()
+                    .map(settingMapper::toExportDto)
+                    .collect(java.util.stream.Collectors.toList());
+
+            // 1. Удаляем все текущие настройки
+            settingDao.deleteAll();
+            // 2. Создаём новые настройки из файла (в одной транзакции)
+            settingDao.createAll(settings);
+            // 3. Очищаем кэш
+            cache.removeAll();
+            // 4. Записываем в аудит старые настройки (после успешного импорта)
+            auditService.logImport(oldSettings);
+            log.info("Импорт настроек завершён, количество: {}", settings.size());
+        } catch (Exception e) {
+            log.error("Ошибка импорта настроек", e);
+            throw new RuntimeException("Failed to import settings", e);
         }
     }
 }

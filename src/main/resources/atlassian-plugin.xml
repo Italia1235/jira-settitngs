@@ -37,6 +37,8 @@
         <!-- Кнопки и флаг для ошибок (опционально, но желательно) -->
         <dependency>com.atlassian.auiplugin:aui-button</dependency>
         <dependency>com.atlassian.auiplugin:aui-flag</dependency>
+        <!-- Диалог подтверждения импорта -->
+        <dependency>com.atlassian.auiplugin:aui-dialog2</dependency>
     </web-resource>
 
     <!-- 3. REST API -->

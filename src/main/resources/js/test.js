@@ -72,7 +72,91 @@ AJS.toInit((jQuery) => {
             }
         ]
     };
+    AJS.$("#export-settings-btn").on("click", function () {
+        // Скачиваем файл через REST-эндпоинт
+        var exportUrl = AJS.contextPath() + "/rest/bureau/1/settings/export";
+        window.location.href = exportUrl;
+    });
 
+    // =========================================
+    // ИМПОРТ: Загрузка настроек из JSON-файла
+    // =========================================
+
+    // Кнопка "Выбрать файл" открывает скрытый file input
+    AJS.$("#import-settings-choose-btn").on("click", function () {
+        AJS.$("#import-settings-file").trigger("click");
+    });
+
+    // При выборе файла показываем имя и активируем кнопку "Применить"
+    AJS.$("#import-settings-file").on("change", function () {
+        var file = this.files[0];
+        if (file) {
+            AJS.$("#import-settings-file-name").text(file.name);
+            AJS.$("#import-settings-apply-btn").prop("disabled", false);
+        } else {
+            AJS.$("#import-settings-file-name").text("");
+            AJS.$("#import-settings-apply-btn").prop("disabled", true);
+        }
+    });
+
+    // Кнопка "Применить" открывает диалог подтверждения (с оверлеем)
+    AJS.$("#import-settings-apply-btn").on("click", function () {
+        AJS.$("#import-overlay").show();
+        AJS.$("#import-confirm-dialog").show();
+    });
+
+    // Кнопка "Отмена" в диалоге
+    AJS.$("#import-confirm-cancel-btn").on("click", function () {
+        AJS.$("#import-confirm-dialog").hide();
+        AJS.$("#import-overlay").hide();
+    });
+
+    // Кнопка "Применить" в диалоге — отправка файла на сервер
+    AJS.$("#import-confirm-btn").on("click", function () {
+        var file = AJS.$("#import-settings-file")[0].files[0];
+        if (!file) {
+            AJS.$("#import-confirm-dialog").hide();
+            AJS.$("#import-overlay").hide();
+            return;
+        }
+
+        var reader = new FileReader();
+        reader.onload = function (e) {
+            var json;
+            try {
+                json = JSON.parse(e.target.result);
+            } catch (parseError) {
+                AJS.$("#import-confirm-dialog").hide();
+                AJS.$("#import-overlay").hide();
+                AJS.flag({ type: "error", title: "Ошибка", body: "Некорректный JSON-файл." });
+                return;
+            }
+
+            AJS.$.ajax({
+                url: AJS.contextPath() + "/rest/bureau/1/settings/import",
+                type: "POST",
+                contentType: "application/json",
+                data: JSON.stringify(json),
+                success: function () {
+                    AJS.$("#import-confirm-dialog").hide();
+                    AJS.$("#import-overlay").hide();
+                    AJS.flag({ type: "success", title: "Настройки успешно загружены" });
+                    // Перезагружаем страницу, чтобы обновить таблицу
+                    setTimeout(function () { location.reload(); }, 1000);
+                },
+                error: function (xhr) {
+                    AJS.$("#import-confirm-dialog").hide();
+                    AJS.$("#import-overlay").hide();
+                    var msg = "Ошибка загрузки настроек.";
+                    if (xhr.responseJSON && xhr.responseJSON.errorMessage) {
+                        msg = xhr.responseJSON.errorMessage;
+                    }
+                    AJS.flag({ type: "error", title: "Ошибка", body: msg });
+                }
+            });
+        };
+        reader.readAsText(file);
+    });
     if (typeof AJS.RestfulTable === "undefined") {
         console.error("RestfulTable не найден");
         return;

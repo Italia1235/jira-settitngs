@@ -1,6 +1,7 @@
 package ru.bureau.settings.mapper;
 
 import ru.bureau.settings.dto.SettingDto;
+import ru.bureau.settings.dto.SettingsExportDto;
 import ru.bureau.settings.entity.Setting;
 
 import javax.inject.Named;
@@ -11,6 +12,12 @@ public class SettingMapper {
     public SettingDto toDto(Setting entity){
         return Optional.ofNullable(entity).map(e-> {
             return new SettingDto(e.getID(),e.getName(), e.getValue(), e.getExplanation());
+        }).orElse(null);
+    }
+
+    public SettingsExportDto toExportDto(Setting entity){
+        return Optional.ofNullable(entity).map(e-> {
+            return new SettingsExportDto(e.getName(), e.getValue(), e.getExplanation());
         }).orElse(null);
     }
 

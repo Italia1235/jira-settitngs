@@ -4,6 +4,7 @@ package ru.bureau.settings.api;
 
 
 import ru.bureau.settings.dto.SettingDto;
+import ru.bureau.settings.dto.SettingsExportDto;
 import ru.bureau.settings.entity.Setting;
 
 import java.util.List;
@@ -41,4 +42,18 @@ public interface SettingsService {
      void updateSettings(int settingId, String name, String newValue, String explanation);
      void updateSettingsExplanation(int settingId, String explanation);
      String getSettingValue(String name);
+
+    /**
+     * Exports all settings as a list of export DTOs (without DB ids).
+     *
+     * @return list of settings for export
+     */
+    List<SettingsExportDto> exportSettings();
+
+    /**
+     * Imports settings from a list of export DTOs, replacing all current settings.
+     *
+     * @param settings list of settings to import
+     */
+    void importSettings(List<SettingsExportDto> settings);
 }

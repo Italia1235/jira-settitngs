@@ -5,16 +5,63 @@
     <meta name="admin.active.section" content="admin_plugins_menu"/>
     <meta name="aui-page-panel" content="true"/>
     $webResourceManager.requireResource("ru.bureau.settings:test-setting")
+    $webResourceManager.requireResource("ru.bureau.settings:settings-resources")
 
 </head>
 <body>
 <div class="content-body">
     <h2>Settings Entity</h2>
+
     <div id="bureau-settings-error-msg" style="display: none; margin-top: 10px; background: #ffecec; border: 1px solid #d00; padding: 10px; color: #b00; border-radius: 4px;">
         <span class="error-text"></span>
         <a href="#" class="error-close">✕</a>
     </div>
     <table id="settings-table"></table>
+
+    <!-- Панель загрузки настроек из JSON-файла -->
+    <div class="settings-import-panel">
+        <h3>Загрузить настройки</h3>
+        <p class="aui-description">Загрузите JSON-файл, чтобы заменить все текущие настройки.</p>
+        <div class="settings-import-controls">
+            <input type="file" id="import-settings-file" accept=".json,application/json" style="display:none;"/>
+            <button id="import-settings-choose-btn" class="aui-button" title="Выбрать JSON-файл с настройками">
+                <span class="aui-icon aui-icon-small aui-iconfont-upload"></span>
+                Выбрать файл
+            </button>
+            <span id="import-settings-file-name" class="settings-import-file-name"></span>
+            <button id="import-settings-apply-btn" class="aui-button aui-button-primary" disabled>
+                Применить
+            </button>
+        </div>
+    </div>
+
+    <!-- Панель действий: кнопка выгрузки настроек в JSON (снизу таблицы) -->
+    <div class="settings-toolbar">
+        <button id="export-settings-btn" class="aui-button aui-button-primary" title="Выгрузить все настройки в JSON-файл">
+            <span class="aui-icon aui-icon-small aui-iconfont-download"></span>
+            Выгрузить настройки (JSON)
+        </button>
+    </div>
 </div>
+
+<!-- Оверлей за модальным окном (блокирует клики по странице) -->
+<div id="import-overlay" style="display: none;"></div>
+
+<!-- Диалог подтверждения импорта -->
+<section id="import-confirm-dialog" class="aui-dialog2 aui-dialog2-small" role="dialog" aria-hidden="true" style="display: none;">
+    <header class="aui-dialog2-header">
+        <h2 class="aui-dialog2-header-main">Подтверждение импорта</h2>
+    </header>
+    <div class="aui-dialog2-content">
+        <p>Вы уверены, что хотите заменить <strong>все текущие настройки</strong> настройками из выбранного файла?</p>
+        <p class="aui-lozenge aui-lozenge-error">Это действие необратимо!</p>
+    </div>
+    <footer class="aui-dialog2-footer">
+        <div class="aui-dialog2-footer-actions">
+            <button id="import-confirm-cancel-btn" class="aui-button aui-button-link">Отмена</button>
+            <button id="import-confirm-btn" class="aui-button aui-button-primary">Применить</button>
+        </div>
+    </footer>
+</section>
 </body>
 </html>
