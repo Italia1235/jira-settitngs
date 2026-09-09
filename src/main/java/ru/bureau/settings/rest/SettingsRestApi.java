@@ -13,7 +13,7 @@ import ru.bureau.settings.entity.Setting;
 import ru.bureau.settings.error.DuplicateKeyException;
 import ru.bureau.settings.error.ErrorMessage;
 import ru.bureau.settings.mapper.SettingMapper;
-import ru.bureau.settings.servlet.UserPermissionChecker;
+import ru.bureau.settings.sec.UserPermissionChecker;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -29,6 +29,12 @@ import java.util.stream.Collectors;
 public class SettingsRestApi {
 
     private static final Logger log = LoggerFactory.getLogger(SettingsRestApi.class);
+
+    // SEC-009: лимиты валидации входных данных (защита от DoS и переполнения хранилища)
+    private static final int MAX_NAME_LENGTH = 255;
+    private static final int MAX_VALUE_LENGTH = 4000;
+    private static final int MAX_IMPORT_RECORDS = 1000;
+
     private final SettingsService settingsService;
     private final SettingMapper settingMapper;
     private final UserPermissionChecker userPermissionChecker;
@@ -40,9 +46,28 @@ public class SettingsRestApi {
         this.userPermissionChecker = userPermissionChecker;
     }
 
+    /**
+     * Проверяет, что запрос выполняется администратором JIRA (глобальное право SYSTEM_ADMIN).
+     * Если пользователь не аутентифицирован или не является администратором — возвращает 403 FORBIDDEN.
+     */
+    private Response checkAdminPermission() {
+        ApplicationUser user = ComponentAccessor.getJiraAuthenticationContext().getLoggedInUser();
+        if (user == null || !userPermissionChecker.isUserHasPermissionForMappingManagement(user)) {
+            log.warn("Доступ запрещен. Пользователь: {}", user != null ? user.getUsername() : "anonymous");
+            return Response.status(Response.Status.FORBIDDEN)
+                    .entity(new ErrorMessage("Доступ запрещен. Требуются права администратора JIRA."))
+                    .build();
+        }
+        return null;
+    }
+
     @GET
     @Path("/")
     public Response getAllSettingsJson() {
+        Response forbidden = checkAdminPermission();
+        if (forbidden != null) {
+            return forbidden;
+        }
         try {
             List<Setting> rawSettings = settingsService.getAllSettings();
 
@@ -72,9 +97,20 @@ public class SettingsRestApi {
     @Path("/{settingId}")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getSetting(@PathParam("settingId") String mappingIdParam) {
-        final int settingId = Integer.parseInt(mappingIdParam);
-        SettingDto sd = settingsService.findById(settingId);
-        return Response.ok(sd, MediaType.APPLICATION_JSON).build();
+        Response forbidden = checkAdminPermission();
+        if (forbidden != null) {
+            return forbidden;
+        }
+        try {
+            final int settingId = Integer.parseInt(mappingIdParam);
+            SettingDto sd = settingsService.findById(settingId);
+            return Response.ok(sd, MediaType.APPLICATION_JSON).build();
+        } catch (NumberFormatException e) {
+            log.warn("Некорректный ID настройки: {}", mappingIdParam);
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(new ErrorMessage("Некорректный формат ID."))
+                    .build();
+        }
     }
 
 
@@ -82,6 +118,10 @@ public class SettingsRestApi {
     @Path("name/{key}")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getSettingByKey(@PathParam("key") String mappingIdParam) {
+        Response forbidden = checkAdminPermission();
+        if (forbidden != null) {
+            return forbidden;
+        }
         Setting sd = settingsService.getSetting(mappingIdParam);
         return Response.ok(sd.getValue(), MediaType.APPLICATION_JSON).build();
     }
@@ -90,6 +130,10 @@ public class SettingsRestApi {
     @POST
     @Path("/")
     public Response createSetting(SettingDto dto) {
+        Response forbidden = checkAdminPermission();
+        if (forbidden != null) {
+            return forbidden;
+        }
         try {
             String name = dto.getName();
             String value = dto.getValue();
@@ -97,6 +141,22 @@ public class SettingsRestApi {
             if (StringUtils.isEmpty(name) || StringUtils.isEmpty(value)) {
                 ErrorMessage errorMessage = new ErrorMessage("Mapping key and value can not be empty.");
                 return Response.status(Response.Status.BAD_REQUEST).entity(errorMessage).build();
+            }
+            // SEC-009: валидация длины полей (защита от переполнения хранилища)
+            if (name.length() > MAX_NAME_LENGTH) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity(new ErrorMessage("Длина имени настройки превышает " + MAX_NAME_LENGTH + " символов."))
+                        .build();
+            }
+            if (value.length() > MAX_VALUE_LENGTH) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity(new ErrorMessage("Длина значения настройки превышает " + MAX_VALUE_LENGTH + " символов."))
+                        .build();
+            }
+            if (explanation != null && explanation.length() > MAX_VALUE_LENGTH) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity(new ErrorMessage("Длина описания настройки превышает " + MAX_VALUE_LENGTH + " символов."))
+                        .build();
             }
             Setting set = settingsService.createSetting(name, value,explanation);
             SettingDto settingDto = settingMapper.toDto(set);
@@ -118,6 +178,10 @@ public class SettingsRestApi {
     @Path("/{settingId}")
 
     public Response deleteSetting(@PathParam("settingId") String settingIdParam) {
+        Response forbidden = checkAdminPermission();
+        if (forbidden != null) {
+            return forbidden;
+        }
         try {
             int settingId = Integer.parseInt(settingIdParam);
 
@@ -146,7 +210,7 @@ public class SettingsRestApi {
         } catch (Exception e) {
             log.error("Ошибка при удалении настройки", e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(new ErrorMessage("Ошибка при удалении: " + e.getMessage()))
+                    .entity(new ErrorMessage("Внутренняя ошибка сервера."))
                     .build();
         }
     }
@@ -154,6 +218,10 @@ public class SettingsRestApi {
     @PUT
     @Path("/{settingId}")
     public Response updateSetting(@PathParam("settingId") String settingIdParam, SettingDto dto) {
+        Response forbidden = checkAdminPermission();
+        if (forbidden != null) {
+            return forbidden;
+        }
         try {
             int settingId = Integer.parseInt(settingIdParam);
 
@@ -180,7 +248,7 @@ public class SettingsRestApi {
         } catch (Exception e) {
             log.error("Ошибка обновления", e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(new ErrorMessage("Ошибка при обновлении: " + e.getMessage()))
+                    .entity(new ErrorMessage("Внутренняя ошибка сервера."))
                     .build();
         }
     }
@@ -194,12 +262,9 @@ public class SettingsRestApi {
     @Produces(MediaType.APPLICATION_JSON)
     public Response exportSettings() {
         // Проверка прав: только администратор может выгружать настройки
-        ApplicationUser user = ComponentAccessor.getJiraAuthenticationContext().getLoggedInUser();
-        if (user == null || !userPermissionChecker.isUserHasPermissionForMappingManagement(user)) {
-            log.warn("Доступ запрещен для экспорта настроек. Пользователь: {}", user != null ? user.getUsername() : "anonymous");
-            return Response.status(Response.Status.FORBIDDEN)
-                    .entity(new ErrorMessage("Доступ запрещен. Только администратор может выгружать настройки."))
-                    .build();
+        Response forbidden = checkAdminPermission();
+        if (forbidden != null) {
+            return forbidden;
         }
 
         try {
@@ -214,7 +279,7 @@ public class SettingsRestApi {
         } catch (Exception e) {
             log.error("Ошибка экспорта настроек", e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(new ErrorMessage("Ошибка экспорта: " + e.getMessage()))
+                    .entity(new ErrorMessage("Внутренняя ошибка сервера."))
                     .build();
         }
     }
@@ -229,12 +294,9 @@ public class SettingsRestApi {
     @Consumes(MediaType.APPLICATION_JSON)
     public Response importSettings(SettingsExportFile file) {
         // Проверка прав: только администратор может загружать настройки
-        ApplicationUser user = ComponentAccessor.getJiraAuthenticationContext().getLoggedInUser();
-        if (user == null || !userPermissionChecker.isUserHasPermissionForMappingManagement(user)) {
-            log.warn("Доступ запрещен для импорта настроек. Пользователь: {}", user != null ? user.getUsername() : "anonymous");
-            return Response.status(Response.Status.FORBIDDEN)
-                    .entity(new ErrorMessage("Доступ запрещен. Только администратор может загружать настройки."))
-                    .build();
+        Response forbidden = checkAdminPermission();
+        if (forbidden != null) {
+            return forbidden;
         }
 
         try {
@@ -252,6 +314,37 @@ public class SettingsRestApi {
                         .build();
             }
 
+            // SEC-009: ограничение количества записей при импорте (защита от DoS)
+            if (file.getSettings().size() > MAX_IMPORT_RECORDS) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity(new ErrorMessage("Превышено максимальное количество записей для импорта: " + MAX_IMPORT_RECORDS))
+                        .build();
+            }
+
+            // SEC-009: валидация длины полей каждой записи
+            for (SettingsExportDto dto : file.getSettings()) {
+                if (StringUtils.isEmpty(dto.getName()) || StringUtils.isEmpty(dto.getValue())) {
+                    return Response.status(Response.Status.BAD_REQUEST)
+                            .entity(new ErrorMessage("Имя и значение настройки не могут быть пустыми."))
+                            .build();
+                }
+                if (dto.getName().length() > MAX_NAME_LENGTH) {
+                    return Response.status(Response.Status.BAD_REQUEST)
+                            .entity(new ErrorMessage("Длина имени настройки превышает " + MAX_NAME_LENGTH + " символов."))
+                            .build();
+                }
+                if (dto.getValue().length() > MAX_VALUE_LENGTH) {
+                    return Response.status(Response.Status.BAD_REQUEST)
+                            .entity(new ErrorMessage("Длина значения настройки превышает " + MAX_VALUE_LENGTH + " символов."))
+                            .build();
+                }
+                if (dto.getExplanation() != null && dto.getExplanation().length() > MAX_VALUE_LENGTH) {
+                    return Response.status(Response.Status.BAD_REQUEST)
+                            .entity(new ErrorMessage("Длина описания настройки превышает " + MAX_VALUE_LENGTH + " символов."))
+                            .build();
+                }
+            }
+
             settingsService.importSettings(file.getSettings());
             log.info("REST: Импорт настроек, количество: {}", file.getSettings().size());
 
@@ -259,7 +352,7 @@ public class SettingsRestApi {
         } catch (Exception e) {
             log.error("Ошибка импорта настроек", e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(new ErrorMessage("Ошибка импорта: " + e.getMessage()))
+                    .entity(new ErrorMessage("Внутренняя ошибка сервера."))
                     .build();
         }
     }

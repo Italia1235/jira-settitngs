@@ -4,6 +4,7 @@ import com.atlassian.jira.component.ComponentAccessor;
 import com.atlassian.jira.user.ApplicationUser;
 import com.atlassian.plugin.spring.scanner.annotation.imports.ComponentImport;
 import com.atlassian.templaterenderer.TemplateRenderer;
+import ru.bureau.settings.sec.UserPermissionChecker;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;

@@ -1,4 +1,4 @@
-package ru.bureau.settings.servlet;
+package ru.bureau.settings.sec;
 
 import com.atlassian.jira.permission.GlobalPermissionKey;
 import com.atlassian.jira.security.GlobalPermissionManager;

@@ -31,6 +31,10 @@ import java.util.List;
 
 public class SettingsServiceImpl implements SettingsService {
     private static final Logger log = LoggerFactory.getLogger(SettingsServiceImpl.class);
+
+    // SEC-009: максимальное количество записей при импорте (защита от DoS)
+    private static final int MAX_IMPORT_RECORDS = 1000;
+
     private final SettingDao settingDao;
     private final CacheSettings cacheSettings;
     private final SettingMapper settingMapper;
@@ -242,6 +246,13 @@ public class SettingsServiceImpl implements SettingsService {
     public void importSettings(List<SettingsExportDto> settings) {
         if (settings == null) {
             throw new IllegalArgumentException("Settings list must not be null");
+        }
+        // SEC-009: защита от пустого/чрезмерно большого списка (defense-in-depth)
+        if (settings.isEmpty()) {
+            throw new IllegalArgumentException("Settings list must not be empty");
+        }
+        if (settings.size() > MAX_IMPORT_RECORDS) {
+            throw new IllegalArgumentException("Settings list exceeds maximum allowed records: " + MAX_IMPORT_RECORDS);
         }
         try {
             // 0. Сохраняем старые настройки для аудита (до удаления)
