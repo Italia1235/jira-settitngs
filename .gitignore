@@ -1,5 +1,6 @@
 .idea/
 target/
+META-INF/
 plugin_changes_description.txt
 settings_service_analysis.md
 changesAI.md

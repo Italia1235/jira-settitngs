@@ -156,7 +156,7 @@ public class SettingsServiceImpl implements SettingsService {
             }
 
             settingDao.updateWithExplanation(setting, newValue, explanation);
-            // Удалить по новому имени (или старому, если имя не менялось)
+
             String cacheKey = name;
             cache.remove(cacheKey);
 
@@ -260,10 +260,8 @@ public class SettingsServiceImpl implements SettingsService {
                     .map(settingMapper::toExportDto)
                     .collect(java.util.stream.Collectors.toList());
 
-            // 1. Удаляем все текущие настройки
-            settingDao.deleteAll();
-            // 2. Создаём новые настройки из файла (в одной транзакции)
-            settingDao.createAll(settings);
+            // 1-2. Атомарно заменяем все настройки (удаление + создание в одной транзакции)
+            settingDao.replaceAll(settings);
             // 3. Очищаем кэш
             cache.removeAll();
             // 4. Записываем в аудит старые настройки (после успешного импорта)

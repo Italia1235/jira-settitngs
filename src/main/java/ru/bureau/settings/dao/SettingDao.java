@@ -37,54 +37,41 @@ public class SettingDao {
     }
 
     public Setting create(String name, String value, String explanation) {
-        return activeObjects.executeInTransaction(() -> {
-            Setting newSetting = activeObjects.create(Setting.class,
-                    new DBParam("NAME", name),
-                    new DBParam("VALUE", value),
-                    new DBParam("EXPLANATION", explanation)
-            );
-            newSetting.save();
-            return newSetting;
-        });
+        Setting newSetting = activeObjects.create(Setting.class,
+                new DBParam("NAME", name),
+                new DBParam("VALUE", value),
+                new DBParam("EXPLANATION", explanation)
+        );
+        newSetting.save();
+        return newSetting;
     }
 
     public void update(Setting setting, String newValue) {
-        activeObjects.executeInTransaction(() -> {
-            setting.setValue(newValue);
-            setting.save();
-            return null;
-        });
+        setting.setValue(newValue);
+        setting.save();
     }
 
     public void updateWithExplanation(Setting setting, String newValue, String explanation) {
-        activeObjects.executeInTransaction(() -> {
-            setting.setValue(newValue);
-            if (explanation != null) {
-                setting.setExplanation(explanation);
-            }
-            setting.save();
-            return null;
-        });
+        setting.setValue(newValue);
+        if (explanation != null) {
+            setting.setExplanation(explanation);
+        }
+        setting.save();
     }
 
     public void updateName(Setting setting, String newName) {
-        activeObjects.executeInTransaction(() -> {
-            setting.setName(newName);
-            setting.save();
-            return null;
-        });
+        setting.setName(newName);
+        setting.save();
     }
 
     public String deleteById(int id) {
-        return activeObjects.executeInTransaction(() -> {
-            Setting[] setting = activeObjects.find(Setting.class, "ID = ?", id);
-            if (setting.length > 0) {
-                String name = setting[0].getName();
-                activeObjects.delete(setting);
-                return name;
-            }
-            return null;
-        });
+        Setting[] setting = activeObjects.find(Setting.class, "ID = ?", id);
+        if (setting.length > 0) {
+            String name = setting[0].getName();
+            activeObjects.delete(setting);
+            return name;
+        }
+        return null;
     }
 
     /**
@@ -92,10 +79,7 @@ public class SettingDao {
      * Используется при импорте для полной замены настроек.
      */
     public void deleteAll() {
-        activeObjects.executeInTransaction(() -> {
-            activeObjects.deleteWithSQL(Setting.class, "1 = 1");
-            return null;
-        });
+        activeObjects.deleteWithSQL(Setting.class, "1 = 1");
     }
 
     /**
@@ -104,6 +88,25 @@ public class SettingDao {
      */
     public void createAll(List<SettingsExportDto> settings) {
         activeObjects.executeInTransaction(() -> {
+            for (SettingsExportDto dto : settings) {
+                Setting newSetting = activeObjects.create(Setting.class,
+                        new DBParam("NAME", dto.getName()),
+                        new DBParam("VALUE", dto.getValue()),
+                        new DBParam("EXPLANATION", dto.getExplanation())
+                );
+                newSetting.save();
+            }
+            return null;
+        });
+    }
+
+    /**
+     * Атомарно заменяет все настройки: удаляет текущие и создаёт новые в одной транзакции.
+     * Используется при импорте, чтобы при сбое не осталось «полуимпортированного» состояния.
+     */
+    public void replaceAll(List<SettingsExportDto> settings) {
+        activeObjects.executeInTransaction(() -> {
+            activeObjects.deleteWithSQL(Setting.class, "1 = 1");
             for (SettingsExportDto dto : settings) {
                 Setting newSetting = activeObjects.create(Setting.class,
                         new DBParam("NAME", dto.getName()),

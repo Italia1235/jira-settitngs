@@ -50,7 +50,13 @@
         <dependency>
             <groupId>com.atlassian.activeobjects</groupId>
             <artifactId>activeobjects-test</artifactId>
-            <version>1.0.0</version>
+            <version>5.2.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>2.2.224</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -75,7 +81,7 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.8.2</version>
+            <version>4.13</version>
             <scope>test</scope>
         </dependency>
 
@@ -146,10 +152,10 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-        <groupId>com.atlassian.plugins</groupId>
-        <artifactId>atlassian-plugins-osgi-javaconfig</artifactId>
-        <version>0.6.1</version>
-    </dependency>
+            <groupId>com.atlassian.plugins</groupId>
+            <artifactId>atlassian-plugins-osgi-javaconfig</artifactId>
+            <version>0.6.1</version>
+        </dependency>
 
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -198,7 +204,7 @@
                 <extensions>true</extensions>
                 <configuration>
                     <productVersion>${jira.version}</productVersion>
-
+                    <skipRestDocGeneration>true</skipRestDocGeneration>
                     <productDataVersion>${jira.version}</productDataVersion>
                     <!-- Uncomment to install TestKit backdoor in JIRA. -->
                     <!--
@@ -246,7 +252,8 @@
                         <phase>process-classes</phase>
                     </execution>
                 </executions>
-                <configuration>
+                <configuration>   <skipRestDocGeneration>true</skipRestDocGeneration>
+
                     <verbose>false</verbose>
                 </configuration>
             </plugin>
