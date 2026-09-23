@@ -259,6 +259,18 @@
             </plugin>
         </plugins>
     </build>
+    <distributionManagement>
+        <repository>
+            <id>release-repo</id>
+            <name>Release Repository</name>
+            <url>http://n.1440.space/repository/atlassian-maven/</url>
+        </repository>
+        <snapshotRepository>
+            <id>snapshot-repo</id>
+            <name>Snapshot Repository</name>
+            <url>http://n.1440.space/repository/atlassiandevelopment/</url>
+        </snapshotRepository>
+    </distributionManagement>
 
     <properties>
         <jira.version>10.3.24</jira.version>
