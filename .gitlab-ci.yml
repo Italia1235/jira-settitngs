@@ -5,6 +5,8 @@ stages:          # List of stages for jobs, and their order of execution
 
 build-job:       # This job runs in the build stage, which runs first.
   stage: build
+  tags: 
+    - "shell"
   script:
     - echo "Compiling the code..."
     - rm -f pom.xml
@@ -18,10 +20,4 @@ build-job:       # This job runs in the build stage, which runs first.
     paths:
       - target/*.jar
     expire_in: 1 week
-
-deploy-job:
-  stage: deploy
-  script:
-    - ls -la target
-    - python3 script.py tstj.1440.space $TSTJ_TOKEN target/minio-connector-$CI_COMMIT_REF_NAME.jar
 
