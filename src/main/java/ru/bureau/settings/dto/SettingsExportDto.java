@@ -11,6 +11,7 @@ public class SettingsExportDto implements Serializable {
     private String name;
     private String value;
     private String explanation;
+    private boolean encrypted;
 
     public SettingsExportDto() {
     }
@@ -19,6 +20,13 @@ public class SettingsExportDto implements Serializable {
         this.name = name;
         this.value = value;
         this.explanation = explanation;
+    }
+
+    public SettingsExportDto(String name, String value, String explanation, boolean encrypted) {
+        this.name = name;
+        this.value = value;
+        this.explanation = explanation;
+        this.encrypted = encrypted;
     }
 
     public String getName() {
@@ -43,5 +51,13 @@ public class SettingsExportDto implements Serializable {
 
     public void setExplanation(String explanation) {
         this.explanation = explanation;
+    }
+
+    public boolean isEncrypted() {
+        return encrypted;
+    }
+
+    public void setEncrypted(boolean encrypted) {
+        this.encrypted = encrypted;
     }
 }

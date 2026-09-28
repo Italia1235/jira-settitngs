@@ -7,32 +7,28 @@ import com.atlassian.cache.CacheSettingsBuilder;
 import com.atlassian.plugin.spring.scanner.annotation.export.ExportAsService;
 import com.atlassian.plugin.spring.scanner.annotation.imports.ComponentImport;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import ru.bureau.settings.api.SettingsService;
+import ru.bureau.settings.audit.AuditService;
 import ru.bureau.settings.dao.SettingDao;
 import ru.bureau.settings.dto.SettingDto;
 import ru.bureau.settings.dto.SettingsExportDto;
 import ru.bureau.settings.entity.Setting;
 import ru.bureau.settings.error.DuplicateKeyException;
 import ru.bureau.settings.mapper.SettingMapper;
-import ru.bureau.settings.audit.AuditService;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import javax.inject.Named;
-import java.util.Arrays;
 import java.util.List;
 
 
 @ExportAsService({SettingsService.class})
 @Named
-
+@Slf4j
 public class SettingsServiceImpl implements SettingsService {
-    private static final Logger log = LoggerFactory.getLogger(SettingsServiceImpl.class);
 
-    // SEC-009: максимальное количество записей при импорте (защита от DoS)
     private static final int MAX_IMPORT_RECORDS = 1000;
 
     private final SettingDao settingDao;
@@ -59,13 +55,13 @@ public class SettingsServiceImpl implements SettingsService {
 
 
     @SneakyThrows
-    public Setting createSetting(String name, String value,String exp) {
+    public Setting createSetting(String name, String value, String exp, boolean encrypted) {
 
         Setting setting = loadSettingFromDatabase(name);
         if (setting != null) {
             throw new DuplicateKeyException("Setting with name '" + name + "' already exists");
         } //explanation
-        Setting newSetting = settingDao.create(name, value, exp);
+        Setting newSetting = settingDao.create(name, value, exp, encrypted);
         auditService.logCreated(name, value);
         return newSetting;
 
@@ -92,6 +88,7 @@ public class SettingsServiceImpl implements SettingsService {
         }
 
     }
+
     /**
      * Returns the value of a setting by its name.
      * This method bypasses the DTO mapping and returns the raw value.
@@ -115,7 +112,10 @@ public class SettingsServiceImpl implements SettingsService {
     }
 
     public void updateSettings(String name, String newValue) {
-        settingDao.update(settingDao.findByName(name), newValue);
+        Setting existing = settingDao.findByName(name);
+        if (existing != null) {
+            settingDao.update(existing, newValue, existing.isEncrypted());
+        }
         // Получаем старое значение для аудита
         Setting oldSetting = settingDao.findByName(name);
         if (oldSetting != null) {
@@ -132,10 +132,10 @@ public class SettingsServiceImpl implements SettingsService {
                 cache.remove(setting.getName());
             }
             settingDao.updateName(setting, name);
-            settingDao.update(setting, newValue);
+            settingDao.update(setting, newValue, setting.isEncrypted());
             cache.remove(name);
             log.info("Setting {} (ID: {}) updated to value: {}", name, settingId, newValue);
-            
+
             // Аудит: получаем старое значение для аудита
             Setting oldSetting = settingDao.findByName(name);
             if (oldSetting != null) {
@@ -146,7 +146,7 @@ public class SettingsServiceImpl implements SettingsService {
         }
     }
 
-    public void updateSettings(int settingId, String name, String newValue, String explanation) {
+    public void updateSettings(int settingId, String name, String newValue, String explanation, boolean encrypted) {
         Setting setting = settingDao.findById(settingId);
         if (setting != null) {
             boolean nameChanged = !setting.getName().equals(name);
@@ -155,14 +155,14 @@ public class SettingsServiceImpl implements SettingsService {
                 cache.remove(setting.getName()); // Удалить по старому
             }
 
-            settingDao.updateWithExplanation(setting, newValue, explanation);
+            settingDao.updateWithExplanation(setting, newValue, explanation, encrypted);
 
             String cacheKey = name;
             cache.remove(cacheKey);
 
             log.info("Setting {} (ID: {}) updated to value: {} (Explanation: {})",
                     cacheKey, settingId, newValue, explanation);
-            
+
             // Аудит: получаем старое значение для аудита
             Setting oldSetting = settingDao.findByName(name);
             if (oldSetting != null) {
@@ -172,14 +172,14 @@ public class SettingsServiceImpl implements SettingsService {
             log.warn("Setting with ID {} not found", settingId);
         }
     }
-    
+
     public void updateSettingsExplanation(int settingId, String explanation) {
         Setting setting = settingDao.findById(settingId);
         if (setting != null) {
-            settingDao.updateWithExplanation(setting, setting.getValue(), explanation);
+            settingDao.updateWithExplanation(setting, setting.getValue(), explanation, setting.isEncrypted());
             cache.remove(setting.getName());
             log.info("Setting {} (ID: {}) explanation updated to: {}", setting.getName(), settingId, explanation);
-            
+
             // Аудит: получаем старое значение для аудита
             Setting oldSetting = settingDao.findByName(setting.getName());
             if (oldSetting != null) {
@@ -195,10 +195,10 @@ public class SettingsServiceImpl implements SettingsService {
     }
 
 
-
     @Override
     public List<Setting> getAllSettings() {
         try {
+
             return settingDao.findAll();
         } catch (Exception e) {
             log.error("Ошибка получения всех настроек", e);
@@ -211,10 +211,10 @@ public class SettingsServiceImpl implements SettingsService {
         try {
             // Сначала получаем информацию о настройке перед удалением
             Setting settingToDelete = settingDao.findById(id);
-            
+
             // Выполняем удаление
             String deletedName = settingDao.deleteById(id);
-            
+
             // Если запись была удалена, то делаем аудит
             if (deletedName != null && settingToDelete != null) {
                 // Записываем в аудит только если у нас есть данные для записи

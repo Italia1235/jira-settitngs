@@ -66,7 +66,7 @@ public class SettingCacheTest {
         // Use real in-memory cache manager instead of a mock
         testCacheManager = new TestCacheManager();
         service = new SettingsServiceImpl(
-                new SettingDao(ao),
+                new SettingDao(ao, null),
                 new SettingMapper(),
                 testCacheManager,
                 new AuditService(mock(AuditWriter.class))
@@ -82,7 +82,7 @@ public class SettingCacheTest {
     }
 
     private Setting createSettingInDb(String name, String value, String explanation) {
-        return service.createSetting(name, value, explanation);
+        return service.createSetting(name, value, explanation, false);
     }
 
     // ---------------------------------------------------------------

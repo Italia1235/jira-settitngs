@@ -46,7 +46,7 @@ public class SettingDbTest {
         }
         ao = new TestActiveObjects(entityManager);
         service = new SettingsServiceImpl(
-                new SettingDao(ao),
+                new SettingDao(ao, null),
                 new SettingMapper(),
                 new TestCacheManager(),
                 new AuditService(mock(AuditWriter.class))
@@ -58,7 +58,7 @@ public class SettingDbTest {
      * чтобы тестировать именно сервис (а не прямой доступ к Active Objects).
      */
     private Setting createSettingInDb(String name, String value, String explanation) {
-        return service.createSetting(name, value, explanation);
+        return service.createSetting(name, value, explanation, false);
     }
 
     // ---------------------------------------------------------------
@@ -69,7 +69,7 @@ public class SettingDbTest {
     public void insertSetting_existsInDb() {
         assertEquals("База должна быть пустой", 0, ao.find(Setting.class).length);
 
-        service.createSetting("my.setting", "my.value", "my.explanation");
+        service.createSetting("my.setting", "my.value", "my.explanation", false);
 
         assertEquals("В базе должна быть 1 запись", 1, ao.find(Setting.class).length);
 
@@ -88,7 +88,7 @@ public class SettingDbTest {
     public void createSetting_createsRecord() {
         assertEquals("База должна быть пустой", 0, ao.find(Setting.class).length);
 
-        Setting created = service.createSetting("name", "value", "exp");
+        Setting created = service.createSetting("name", "value", "exp", false);
 
         assertEquals("В базе должна быть 1 запись", 1, ao.find(Setting.class).length);
         assertNotNull(created);
@@ -208,7 +208,7 @@ public class SettingDbTest {
     public void updateSettings_byId_withExplanation() {
         Setting created = createSettingInDb("upd3", "old", "oldExp");
 
-        service.updateSettings(created.getID(), "upd3", "newValue", "newExp");
+        service.updateSettings(created.getID(), "upd3", "newValue", "newExp", false);
 
         Setting reloaded = service.getSetting("upd3");
         assertNotNull(reloaded);

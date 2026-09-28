@@ -4,6 +4,9 @@ import com.atlassian.jira.component.ComponentAccessor;
 import com.atlassian.jira.user.ApplicationUser;
 import com.atlassian.plugin.spring.scanner.annotation.imports.ComponentImport;
 import com.atlassian.templaterenderer.TemplateRenderer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import ru.bureau.settings.sec.UserPermissionChecker;
 
 import javax.servlet.http.HttpServlet;
@@ -17,9 +20,11 @@ public class SettingsServletMainPage extends HttpServlet {
 
     private static final String TEMPLATE_PATH_PARAM_NAME = "template";
 
+    private static final Logger log = LoggerFactory.getLogger(SettingsServletMainPage.class);
     private final UserPermissionChecker userPermissionChecker;
     @ComponentImport
     private final TemplateRenderer templateRenderer;
+
 
     public SettingsServletMainPage(UserPermissionChecker userPermissionChecker, TemplateRenderer templateRenderer) {
         this.userPermissionChecker = userPermissionChecker;

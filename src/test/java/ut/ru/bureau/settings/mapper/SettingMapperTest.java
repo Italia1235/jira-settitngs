@@ -19,6 +19,7 @@ public class SettingMapperTest {
         when(setting.getName()).thenReturn(name);
         when(setting.getValue()).thenReturn(value);
         when(setting.getExplanation()).thenReturn(explanation);
+        when(setting.isEncrypted()).thenReturn(false);
         return setting;
     }
 

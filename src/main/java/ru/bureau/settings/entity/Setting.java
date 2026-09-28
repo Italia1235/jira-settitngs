@@ -20,4 +20,12 @@ public interface Setting extends Entity {
     @StringLength(StringLength.UNLIMITED)
     String getExplanation();
     void setExplanation(String explanation);
+
+    /**
+     * Признак того, что значение настройки хранится в БД в зашифрованном виде.
+     * Если {@code true} — {@link #getValue()} в БД содержит шифротекст,
+     * наружу (REST/UI) отдаётся расшифрованное значение.
+     */
+    boolean isEncrypted();
+    void setEncrypted(boolean encrypted);
 }

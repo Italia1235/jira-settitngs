@@ -11,13 +11,13 @@ public class SettingMapper {
 
     public SettingDto toDto(Setting entity){
         return Optional.ofNullable(entity).map(e-> {
-            return new SettingDto(e.getID(),e.getName(), e.getValue(), e.getExplanation());
+            return new SettingDto(e.getID(),e.getName(), e.getValue(), e.getExplanation(), e.isEncrypted());
         }).orElse(null);
     }
 
     public SettingsExportDto toExportDto(Setting entity){
         return Optional.ofNullable(entity).map(e-> {
-            return new SettingsExportDto(e.getName(), e.getValue(), e.getExplanation());
+            return new SettingsExportDto(e.getName(), e.getValue(), e.getExplanation(), e.isEncrypted());
         }).orElse(null);
     }
 
@@ -26,5 +26,6 @@ public class SettingMapper {
         entity.setValue(dto.getValue());
         entity.setName(dto.getName());
         entity.setExplanation(dto.getExplanation());
+        entity.setEncrypted(dto.isEncrypted());
     }
 }

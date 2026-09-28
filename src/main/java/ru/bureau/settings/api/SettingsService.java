@@ -9,14 +9,16 @@ import java.util.List;
 public interface SettingsService {
 
     /**
-     * Creates a new setting with the given name and value.
+     * Creates a new setting with the given name, value, explanation and encryption flag.
      *
-     * @param name  The name of the setting. Must not be blank.
-     * @param value The value of the setting. Must not be blank.
+     * @param name      The name of the setting. Must not be blank.
+     * @param value     The value of the setting. Must not be blank.
+     * @param exp       The explanation of the setting.
+     * @param encrypted Whether the value should be stored encrypted in the DB.
      * @return The created Setting object.
      * @throws IllegalArgumentException if name or value is blank, or if a setting with the given name already exists.
      */
-    Setting createSetting(String name, String value,String exp);
+    Setting createSetting(String name, String value, String exp, boolean encrypted);
 
     /**
      * Retrieves a setting by its name.
@@ -36,7 +38,17 @@ public interface SettingsService {
 
      boolean deleteSettingById(int id);
      void updateSettings(int settingId, String name, String newValue);
-     void updateSettings(int settingId, String name, String newValue, String explanation);
+
+     /**
+      * Updates a setting with the given id, name, value, explanation and encryption flag.
+      *
+      * @param settingId the id of the setting
+      * @param name      the (possibly new) name of the setting
+      * @param newValue  the new value (plain text)
+      * @param explanation the new explanation
+      * @param encrypted whether the value should be stored encrypted in the DB
+      */
+     void updateSettings(int settingId, String name, String newValue, String explanation, boolean encrypted);
      void updateSettingsExplanation(int settingId, String explanation);
      String getSettingValue(String name);
 

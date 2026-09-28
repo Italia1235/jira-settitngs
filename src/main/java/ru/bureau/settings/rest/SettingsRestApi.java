@@ -77,7 +77,8 @@ public class SettingsRestApi {
                             setting.getID(),
                             setting.getName(),
                             setting.getValue(),
-                            setting.getExplanation()
+                            setting.getExplanation(),
+                            setting.isEncrypted()
                     ))
                     .collect(Collectors.toList());
 
@@ -158,7 +159,7 @@ public class SettingsRestApi {
                         .entity(new ErrorMessage("Длина описания настройки превышает " + MAX_VALUE_LENGTH + " символов."))
                         .build();
             }
-            Setting set = settingsService.createSetting(name, value,explanation);
+            Setting set = settingsService.createSetting(name, value,explanation, dto.isEncrypted());
             SettingDto settingDto = settingMapper.toDto(set);
             return Response.ok(settingDto).build();
         } catch (DuplicateKeyException e) {
@@ -241,7 +242,12 @@ public class SettingsRestApi {
             if (dto.getExplanation() != null) {
                 existing.setExplanation(dto.getExplanation());
             }
-            settingsService.updateSettings(settingId, existing.getName(), existing.getValue(), existing.getExplanation());
+            settingsService.updateSettings(settingId, existing.getName(), existing.getValue(), existing.getExplanation(), dto.isEncrypted());
+
+            // Обновляем флаг encrypted в DTO, который возвращаем клиенту.
+            // Иначе response вернёт СТАРОЕ значение (false), хотя в БД уже true,
+            // и клиент (AJS.RestfulTable) сбросит галочку в UI.
+            existing.setEncrypted(dto.isEncrypted());
 
             return Response.ok(existing).build();
 
